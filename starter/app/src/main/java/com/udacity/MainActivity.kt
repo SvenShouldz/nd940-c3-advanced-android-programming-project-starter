@@ -13,6 +13,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -69,18 +71,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupClickListener() {
-        binding.contentMain.customButton.setOnClickListener {
+        binding.contentMain.loadingButton.setOnClickListener {
             val selectedId = binding.contentMain.radioGroup.checkedRadioButtonId
             if (selectedId != -1) {
                 val radioButton = findViewById<RadioButton>(selectedId)
                 val url = radioButton.tag.toString()
                 // Download chosen repository
                 download(url)
-                binding.contentMain.customButton.setLoadingState(ButtonState.Loading)
+                binding.contentMain.loadingButton.setLoadingState(ButtonState.Loading)
             } else {
                 // Send toast if no radiobutton is checked
                 Toast.makeText(this, R.string.select_repository, Toast.LENGTH_SHORT).show()
-                binding.contentMain.customButton.setLoadingState(ButtonState.Unclicked)
+                binding.contentMain.loadingButton.setLoadingState(ButtonState.Unclicked)
             }
         }
     }
@@ -89,11 +91,13 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             if (id == downloadID) {
-                sendNotification(
-                    getString(R.string.state_completed),
-                    getString(R.string.download_finished)
-                )
-                binding.contentMain.customButton.setLoadingState(ButtonState.Completed)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    binding.contentMain.loadingButton.setLoadingState(ButtonState.Completed)
+                    sendNotification(
+                        getString(R.string.state_completed),
+                        getString(R.string.download_finished)
+                    )
+                }, 2000)
             }
         }
     }
@@ -149,7 +153,10 @@ class MainActivity : AppCompatActivity() {
                 .setRequiresCharging(false)
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(true)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, getSelectedRepositoryName())
+                .setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    getSelectedRepositoryName()
+                )
 
         val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         downloadID =
