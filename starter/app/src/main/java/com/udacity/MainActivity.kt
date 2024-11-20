@@ -31,10 +31,9 @@ class MainActivity : AppCompatActivity() {
 
         registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
 
-        // TODO: Implement code below
-//        binding.custom_button.setOnClickListener {
-//            download()
-//        }
+        binding.contentMain.customButton.setOnClickListener {
+            binding.contentMain.customButton.setLoadingState(ButtonState.Loading)
+        }
     }
 
     private val receiver = object : BroadcastReceiver() {
