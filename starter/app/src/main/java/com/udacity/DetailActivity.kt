@@ -13,5 +13,17 @@ class DetailActivity : AppCompatActivity() {
         binding = ActivityDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+
+        // get intent extras
+        val repositoryName = intent.getStringExtra("repository_name") ?: "Unknown"
+        val downloadStatus = intent.getStringExtra("download_status") ?: "Unknown"
+
+        binding.contentDetail.detailTitle.text = repositoryName
+        binding.contentDetail.detailStatus.text = downloadStatus
+
+        // navigate back to the main screen
+        binding.contentDetail.backButton.setOnClickListener {
+            finish()
+        }
     }
 }

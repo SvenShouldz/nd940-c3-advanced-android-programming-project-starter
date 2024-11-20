@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
-import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import kotlin.properties.Delegates
 
 class LoadingButton @JvmOverloads constructor(
@@ -27,10 +26,18 @@ class LoadingButton @JvmOverloads constructor(
         invalidate()
     }
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val paintBackground = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = context.getColor(R.color.colorPrimaryDark)
+    }
+
+    private val paintProgress = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = context.getColor(R.color.colorPrimary)
+    }
+
+    private val paintText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         textSize = 48f
-        color = context.getColor(R.color.colorPrimaryDark)
+        color = Color.WHITE
     }
 
     init {
@@ -40,33 +47,27 @@ class LoadingButton @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
-        canvas?.drawRect(0f, 0f, widthSize.toFloat(),  heightSize.toFloat(), paint)
+        // Draw Background
+        canvas?.drawRect(0f, 0f, widthSize.toFloat(), heightSize.toFloat(), paintBackground)
 
         // Draw the loading animation progress
         if (buttonState == ButtonState.Loading) {
             val progress = (valueAnimator.animatedValue as Float) * widthSize
-            canvas?.drawRect(progress, 0f, widthSize.toFloat(),  heightSize.toFloat(), paint.apply {
-                color = context.getColor(R.color.colorPrimaryDark)
-            })
-            canvas?.drawRect(0f, 0f, progress, heightSize.toFloat(), paint.apply {
-                color = context.getColor(R.color.colorPrimary)
-            })
+            canvas?.drawRect(0f, 0f, progress, heightSize.toFloat(), paintProgress)
         }
 
         // Draw text
         val text = when (buttonState) {
-            ButtonState.Loading -> context.getString(R.string.button_loading)
-            ButtonState.Completed -> context.getString(R.string.button_completed)
+            ButtonState.Loading -> context.getString(R.string.state_loading)
+            ButtonState.Completed -> context.getString(R.string.state_completed)
             else -> context.getString(R.string.button_name)
         }
 
         canvas?.drawText(
             text,
             (widthSize / 2).toFloat(),
-            (heightSize / 2 - (paint.descent() + paint.ascent()) / 2),
-            paint.apply {
-                color = Color.WHITE
-            }
+            (heightSize / 2 - (paintText.descent() + paintText.ascent()) / 2),
+            paintText
         )
     }
 
@@ -91,5 +92,4 @@ class LoadingButton @JvmOverloads constructor(
         heightSize = h
         setMeasuredDimension(w, h)
     }
-
 }
