@@ -43,6 +43,8 @@ class LoadingButton @JvmOverloads constructor(
         }
     }
 
+    private var isAnimating = false
+
     init {
         // Get custom attributes
         context.theme.obtainStyledAttributes(attrs, R.styleable.LoadingButton, 0, 0).apply {
@@ -80,6 +82,11 @@ class LoadingButton @JvmOverloads constructor(
             invalidate()  // Redraw the view with the new color
         }
 
+        if (buttonState == ButtonState.Completed) {
+            paintBackground.color = buttonBackgroundColor
+            invalidate()
+        }
+
         // Draw text
         val text = when (buttonState) {
             ButtonState.Default -> context.getString(R.string.state_default)
@@ -98,12 +105,19 @@ class LoadingButton @JvmOverloads constructor(
     }
 
     fun setLoadingState(state: ButtonState) {
+        // If button is already animating, ignore further changes
+        if (isAnimating && state == ButtonState.Loading) {
+            return
+        }
+
         when (state) {
             ButtonState.Loading -> {
-                // Disable button to prevent spamming clicks
-                isClickable = false
-                buttonState = state
-                valueAnimator.start()
+                if (!isAnimating) {
+                    isAnimating = true
+                    isClickable = false // Disable button to prevent spamming clicks
+                    buttonState = state
+                    valueAnimator.start()
+                }
             }
             ButtonState.Pending -> {
                 buttonState = state
@@ -123,6 +137,7 @@ class LoadingButton @JvmOverloads constructor(
                         context.getString(R.string.notification_description),
                         true
                     )
+                    isAnimating = false
                     isClickable = true
                 } else {
                     // Delay setting to Completed until animation finishes
@@ -135,6 +150,7 @@ class LoadingButton @JvmOverloads constructor(
                                 context.getString(R.string.notification_description),
                                 true
                             )
+                            isAnimating = false
                             isClickable = true
                             valueAnimator.removeListener(this) // Clean up listener
                         }
