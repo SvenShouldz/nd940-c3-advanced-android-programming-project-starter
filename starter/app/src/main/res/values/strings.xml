@@ -24,5 +24,6 @@
     <string name="download_failed">Download failed!</string>
     <string name="back_to_main">Back to Main</string>
     <string name="open_download_directory">Open Download Directory</string>
+    <string name="animated_download_icon">Animated Download Icon</string>
 
 </resources>

@@ -7,18 +7,24 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.database.Cursor
+import android.graphics.drawable.Animatable2
+import android.graphics.drawable.AnimatedVectorDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.udacity.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -41,6 +47,45 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         setupNotifications()
         setupClickListener()
+        setupInitialDrawable()
+    }
+
+    private fun setDrawable(drawableResId: Int): AnimatedVectorDrawable? {
+        return try {
+            val animatedDrawable = ContextCompat.getDrawable(this, drawableResId) as? AnimatedVectorDrawable
+            binding.contentMain.animatedIcon.setImageDrawable(animatedDrawable)
+            animatedDrawable
+        } catch (e: Resources.NotFoundException) {
+            Log.e("MainActivity", "Drawable not found: $drawableResId", e)
+            null
+        }
+    }
+
+    private fun setupInitialDrawable() {
+        setDrawable(R.drawable.avd_download_completed_anim)
+    }
+
+    private fun getDownloadAnimation(): AnimatedVectorDrawable? {
+        return setDrawable(R.drawable.avd_download_anim)
+    }
+
+    private fun getCompletedAnimation(): AnimatedVectorDrawable? {
+        return setDrawable(R.drawable.avd_download_completed_anim)
+    }
+
+    private fun getErrorAnimation(): AnimatedVectorDrawable? {
+        return setDrawable(R.drawable.avd_download_fail_anim)
+    }
+
+    // Create a helper function to loop drawable
+    private fun startLoopingAnimation(drawable: AnimatedVectorDrawable) {
+        drawable.registerAnimationCallback(object : Animatable2.AnimationCallback() {
+            override fun onAnimationEnd(drawable: Drawable?) {
+                // Restart the animation
+                (drawable as? AnimatedVectorDrawable)?.start()
+            }
+        })
+        drawable.start()
     }
 
     private fun setupNotifications() {
@@ -137,6 +182,8 @@ class MainActivity : AppCompatActivity() {
         downloadID =
             downloadManager.enqueue(request)// enqueue puts the download request in the queue.
 
+        getDownloadAnimation()?.let { startLoopingAnimation(it) }
+
         handler.post(checkDownloadRunnable)
     }
 
@@ -175,11 +222,13 @@ class MainActivity : AppCompatActivity() {
 
                     DownloadManager.STATUS_SUCCESSFUL -> {
                         binding.contentMain.loadingButton.setLoadingState(ButtonState.Completed)
+                        getCompletedAnimation()?.start()
                         handler.removeCallbacks(this) // Stop checking
                     }
 
                     DownloadManager.STATUS_FAILED -> {
                         binding.contentMain.loadingButton.setLoadingState(ButtonState.Failed)
+                        getErrorAnimation()?.start()
                         handler.removeCallbacks(this) // Stop checking
                     }
                 }
