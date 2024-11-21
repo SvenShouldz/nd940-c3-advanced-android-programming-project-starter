@@ -5,10 +5,9 @@ import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -31,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var notificationManager: NotificationManager
     private lateinit var pendingIntent: PendingIntent
     private lateinit var action: NotificationCompat.Action
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,18 +56,7 @@ class MainActivity : AppCompatActivity() {
 
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
-            // Register receiver for download completed
-            registerReceiver(
-                receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                RECEIVER_EXPORTED
-            )
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // Remove Receiver
-        unregisterReceiver(receiver)
     }
 
     private fun setupClickListener() {
@@ -78,35 +67,19 @@ class MainActivity : AppCompatActivity() {
                 val url = radioButton.tag.toString()
                 // Download chosen repository
                 download(url)
-                binding.contentMain.loadingButton.setLoadingState(ButtonState.Loading)
             } else {
                 // Send toast if no radiobutton is checked
                 Toast.makeText(this, R.string.select_repository, Toast.LENGTH_SHORT).show()
-                binding.contentMain.loadingButton.setLoadingState(ButtonState.Unclicked)
+                binding.contentMain.loadingButton.setLoadingState(ButtonState.Default)
             }
         }
     }
 
-    private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            if (id == downloadID) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    binding.contentMain.loadingButton.setLoadingState(ButtonState.Completed)
-                    sendNotification(
-                        getString(R.string.state_completed),
-                        getString(R.string.download_finished)
-                    )
-                }, 2000)
-            }
-        }
-    }
-
-    private fun sendNotification(title: String, message: String) {
+    fun sendNotification(title: String, message: String, downloadSuccessful: Boolean) {
         // Create intent for DetailActivity
         val detailIntent = Intent(this, DetailActivity::class.java).apply {
             putExtra("repository_name", getSelectedRepositoryName())
-            putExtra("download_status", "Success")
+            putExtra("download_status", downloadSuccessful)
         }
 
         pendingIntent = PendingIntent.getActivity(
@@ -119,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         action =
             NotificationCompat.Action.Builder(
                 android.R.drawable.ic_menu_save,
-                getString(R.string.download_finished),
+                getString(R.string.notification_button),
                 pendingIntent
             )
                 .build()
@@ -161,6 +134,43 @@ class MainActivity : AppCompatActivity() {
         val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         downloadID =
             downloadManager.enqueue(request)// enqueue puts the download request in the queue.
+
+        handler.post(checkDownloadRunnable)
+    }
+
+    private val checkDownloadRunnable = object : Runnable {
+        override fun run() {
+            val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val query = DownloadManager.Query().setFilterById(downloadID)
+            val cursor: Cursor = downloadManager.query(query)
+
+            if (cursor.moveToFirst()) {
+                val status =
+                    cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                when (status) {
+                    DownloadManager.STATUS_PENDING -> {
+                        binding.contentMain.loadingButton.setLoadingState(ButtonState.Pending)
+                        handler.postDelayed(this, 500) // Continue checking
+                    }
+
+                    DownloadManager.STATUS_RUNNING -> {
+                        binding.contentMain.loadingButton.setLoadingState(ButtonState.Loading)
+                        handler.postDelayed(this, 500) // Continue checking
+                    }
+
+                    DownloadManager.STATUS_SUCCESSFUL -> {
+                        binding.contentMain.loadingButton.setLoadingState(ButtonState.Completed)
+                        handler.removeCallbacks(this) // Stop checking
+                    }
+
+                    DownloadManager.STATUS_FAILED -> {
+                        binding.contentMain.loadingButton.setLoadingState(ButtonState.Failed)
+                        handler.removeCallbacks(this) // Stop checking
+                    }
+                }
+            }
+            cursor.close()
+        }
     }
 
     companion object {

@@ -16,28 +16,27 @@
         android:layout_margin="20dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/guideline"
-        >
+        app:layout_constraintBottom_toTopOf="@+id/guideline">
 
         <RadioButton
             android:id="@+id/radio_glide"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Glide Library"
+            android:text="@string/glide_library"
             android:tag="https://github.com/bumptech/glide/archive/master.zip"/>
 
         <RadioButton
             android:id="@+id/radio_udacity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Udacity Starter Project"
+            android:text="@string/udacity_starter_project"
             android:tag="https://github.com/udacity/nd940-c3-advanced-android-programming-project-starter/archive/master.zip"/>
 
         <RadioButton
             android:id="@+id/radio_retrofit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Retrofit Library"
+            android:text="@string/retrofit_library"
             android:tag="https://github.com/square/retrofit/archive/master.zip"/>
     </RadioGroup>
 
@@ -58,7 +57,7 @@
         app:buttonBackgroundColor="@color/colorPrimaryDark"
         app:progressColor="@color/colorPrimary"
         app:textColor="@android:color/white"
-        app:buttonText="Download"
+        app:buttonText="@string/state_default"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/guideline" />

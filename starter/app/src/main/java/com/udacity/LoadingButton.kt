@@ -1,5 +1,6 @@
 package com.udacity
 
+import android.animation.Animator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -20,9 +21,9 @@ class LoadingButton @JvmOverloads constructor(
     private var buttonBackgroundColor: Int = getColor(context, R.color.colorPrimaryDark)
     private var progressColor: Int = getColor(context, R.color.colorPrimary)
     private var textColor: Int = Color.WHITE
-    private var buttonText: String = context.getString(R.string.button_name)
+    private var buttonText: String = context.getString(R.string.state_default)
 
-    private var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Unclicked) { p, old, new ->
+    var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Default) { p, old, new ->
         invalidate()
     }
 
@@ -48,7 +49,7 @@ class LoadingButton @JvmOverloads constructor(
                 buttonBackgroundColor = getColor(R.styleable.LoadingButton_buttonBackgroundColor, Color.GRAY)
                 progressColor = getColor(R.styleable.LoadingButton_progressColor, Color.BLUE)
                 textColor = getColor(R.styleable.LoadingButton_textColor, Color.WHITE)
-                buttonText = getString(R.styleable.LoadingButton_buttonText) ?: context.getString(R.string.button_name)
+                buttonText = getString(R.styleable.LoadingButton_buttonText) ?: context.getString(R.string.state_default)
             } finally {
                 recycle()
             }
@@ -74,9 +75,11 @@ class LoadingButton @JvmOverloads constructor(
 
         // Draw text
         val text = when (buttonState) {
+            ButtonState.Default -> context.getString(R.string.state_default)
+            ButtonState.Pending -> context.getString(R.string.state_pending)
             ButtonState.Loading -> context.getString(R.string.state_loading)
+            ButtonState.Failed -> context.getString(R.string.state_failed)
             ButtonState.Completed -> context.getString(R.string.state_completed)
-            else -> buttonText
         }
 
         canvas?.drawText(
@@ -88,12 +91,57 @@ class LoadingButton @JvmOverloads constructor(
     }
 
     fun setLoadingState(state: ButtonState) {
-        buttonState = state
         when (state) {
-            ButtonState.Loading -> valueAnimator.start()
-            ButtonState.Completed -> valueAnimator.cancel()
-            else -> invalidate()
+            ButtonState.Loading -> {
+                buttonState = state
+                valueAnimator.start()
+            }
+            ButtonState.Pending -> {
+                buttonState = state
+                valueAnimator.pause()
+            }
+            ButtonState.Failed -> {
+                buttonState = state
+                valueAnimator.cancel()
+            }
+            ButtonState.Completed -> {
+                if (isAnimationCompleted()) {
+                    buttonState = state
+                    valueAnimator.cancel()
+                    // Trigger notification if animation is already completed
+                    (context as MainActivity).sendNotification(
+                        context.getString(R.string.notification_title),
+                        context.getString(R.string.notification_description),
+                        true
+                    )
+                } else {
+                    // Delay setting to Completed until animation finishes
+                    valueAnimator.addListener(object : Animator.AnimatorListener {
+                        override fun onAnimationEnd(animation: Animator) {
+                            buttonState = ButtonState.Completed
+                            (context as MainActivity).sendNotification(
+                                context.getString(R.string.notification_title),
+                                context.getString(R.string.notification_description),
+                                true
+                            )
+                            valueAnimator.removeListener(this) // Clean up listener
+                        }
+
+                        override fun onAnimationStart(animation: Animator) {}
+                        override fun onAnimationCancel(animation: Animator) {}
+                        override fun onAnimationRepeat(animation: Animator) {}
+                    })
+                }
+            }
+            else -> {
+                buttonState = state
+                invalidate()
+            }
         }
+    }
+
+    private fun isAnimationCompleted(): Boolean {
+        return !valueAnimator.isRunning && progress >= 1f
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
