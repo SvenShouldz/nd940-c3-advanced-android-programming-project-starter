@@ -21,6 +21,11 @@ class DetailActivity : AppCompatActivity() {
         binding.contentDetail.detailTitle.text = repositoryName
         binding.contentDetail.detailStatus.text = downloadStatus
 
+        // start motionLayout transition
+        binding.contentDetail.motionLayout.post {
+            binding.contentDetail.motionLayout.transitionToEnd()
+        }
+
         // navigate back to the main screen
         binding.contentDetail.backButton.setOnClickListener {
             finish()
