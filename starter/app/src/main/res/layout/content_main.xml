@@ -9,6 +9,18 @@
     tools:context=".MainActivity"
     tools:showIn="@layout/activity_main">
 
+    <ImageView
+        android:id="@+id/animatedIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:scaleY="0.5"
+        android:scaleX="0.5"
+        android:contentDescription="@string/animated_download_icon"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/radioGroup"/>
+
     <RadioGroup
         android:id="@+id/radioGroup"
         android:layout_width="wrap_content"
@@ -38,6 +50,13 @@
             android:layout_height="wrap_content"
             android:text="@string/retrofit_library"
             android:tag="https://github.com/square/retrofit/archive/master.zip"/>
+
+        <RadioButton
+            android:id="@+id/radio_fail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Test Failed connection"
+            android:tag="https://connection.fail/just/for/testing/master.zip"/>
     </RadioGroup>
 
     <androidx.constraintlayout.widget.Guideline

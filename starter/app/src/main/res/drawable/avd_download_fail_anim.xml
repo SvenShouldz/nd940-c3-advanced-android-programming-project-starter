@@ -27,14 +27,6 @@
                 android:strokeLineCap="round"
                 android:strokeLineJoin="round"
                 android:strokeMiterLimit="10"/>
-            <path
-                android:name="path_1"
-                android:pathData=""
-                android:strokeColor="#000000"
-                android:strokeWidth="20"
-                android:strokeLineCap="round"
-                android:strokeLineJoin="round"
-                android:strokeMiterLimit="10"/>
         </vector>
     </aapt:attr>
     <target android:name="group_2">

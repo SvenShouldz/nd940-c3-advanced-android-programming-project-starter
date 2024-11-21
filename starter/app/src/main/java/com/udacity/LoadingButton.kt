@@ -125,6 +125,7 @@ class LoadingButton @JvmOverloads constructor(
             }
             ButtonState.Failed -> {
                 buttonState = state
+                isClickable = true
                 valueAnimator.cancel()
             }
             ButtonState.Completed -> {

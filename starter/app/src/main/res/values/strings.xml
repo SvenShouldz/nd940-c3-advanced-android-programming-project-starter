@@ -11,7 +11,7 @@
     <string name="state_loading">We are loading!</string>
     <string name="state_pending">Download pending</string>
     <string name="state_failed">Download failed!</string>
-    <string name="state_completed">Download completed</string>
+    <string name="state_completed">Download completed!</string>
     <string name="glide_library">Glide Library</string>
     <string name="udacity_starter_project">Udacity Starter Project</string>
     <string name="retrofit_library">Retrofit Library</string>
@@ -25,5 +25,6 @@
     <string name="back_to_main">Back to Main</string>
     <string name="open_download_directory">Open Download Directory</string>
     <string name="animated_download_icon">Animated Download Icon</string>
+    <string name="url_error">Invalid URL or resource not available.</string>
 
 </resources>

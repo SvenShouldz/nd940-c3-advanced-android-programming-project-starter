@@ -26,6 +26,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.udacity.databinding.ActivityMainBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
@@ -62,7 +68,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupInitialDrawable() {
-        setDrawable(R.drawable.avd_download_completed_anim)
+        setDrawable(R.drawable.avd_download_anim)
     }
 
     private fun getDownloadAnimation(): AnimatedVectorDrawable? {
@@ -165,6 +171,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun download(url: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            if (isUrlValid(url)) {
+                withContext(Dispatchers.Main) {
+                    startDownload(url)
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    showUrlError()
+                }
+            }
+        }
+    }
+
+    private fun showUrlError() {
+        Toast.makeText(this, getString(R.string.url_error), Toast.LENGTH_SHORT).show()
+        getErrorAnimation()?.start()
+        binding.contentMain.loadingButton.setLoadingState(ButtonState.Failed)
+    }
+
+    private fun startDownload(url: String) {
         // Download and save file to Downloads Directory
         val request =
             DownloadManager.Request(Uri.parse(url))
@@ -236,6 +262,23 @@ class MainActivity : AppCompatActivity() {
             cursor.close()
         }
     }
+
+    private fun isUrlValid(urlString: String): Boolean {
+        return try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = 5000 // Timeout for connection
+            connection.readTimeout = 5000
+            val responseCode = connection.responseCode
+            connection.disconnect()
+            responseCode in 200..299 // HTTP 2xx indicates success
+        } catch (e: Exception) {
+            Log.e("URLCheck", "Error validating URL", e)
+            false
+        }
+    }
+
 
     companion object {
         private const val CHANNEL_ID = "notification_downloads"
