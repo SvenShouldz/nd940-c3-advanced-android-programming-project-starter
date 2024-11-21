@@ -54,8 +54,6 @@ class DetailActivity : AppCompatActivity() {
 
         if (intent.resolveActivity(packageManager) != null) {
             startActivity(intent)
-        } else {
-            println("No app available to open Files.")
         }
     }
 }

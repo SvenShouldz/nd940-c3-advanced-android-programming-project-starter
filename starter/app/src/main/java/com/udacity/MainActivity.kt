@@ -31,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pendingIntent: PendingIntent
     private lateinit var action: NotificationCompat.Action
     private val handler = Handler(Looper.getMainLooper())
+    private var pendingStartTime: Long = 0
+    private val TIMEOUT_THRESHOLD: Long = 10000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -149,8 +151,21 @@ class MainActivity : AppCompatActivity() {
                     cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
                 when (status) {
                     DownloadManager.STATUS_PENDING -> {
-                        binding.contentMain.loadingButton.setLoadingState(ButtonState.Pending)
-                        handler.postDelayed(this, 500) // Continue checking
+                        if (pendingStartTime == 0L) {
+                            // Set start time when download enters pending state
+                            pendingStartTime = System.currentTimeMillis()
+                        }
+
+                        val elapsedTime = System.currentTimeMillis() - pendingStartTime
+                        if (elapsedTime > TIMEOUT_THRESHOLD) {
+                            // Timeout exceeded, fail the download
+                            binding.contentMain.loadingButton.setLoadingState(ButtonState.Failed)
+                            handler.removeCallbacks(this) // Stop checking
+                        } else {
+                            // Continue checking if still within timeout threshold
+                            binding.contentMain.loadingButton.setLoadingState(ButtonState.Pending)
+                            handler.postDelayed(this, 500) // Continue checking
+                        }
                     }
 
                     DownloadManager.STATUS_RUNNING -> {

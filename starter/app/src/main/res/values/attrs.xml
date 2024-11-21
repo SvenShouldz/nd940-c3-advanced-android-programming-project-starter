@@ -5,5 +5,6 @@
         <attr name="progressColor" format="color" />
         <attr name="textColor" format="color" />
         <attr name="buttonText" format="string" />
+        <attr name="errorColor" format="color" />
     </declare-styleable>
 </resources>

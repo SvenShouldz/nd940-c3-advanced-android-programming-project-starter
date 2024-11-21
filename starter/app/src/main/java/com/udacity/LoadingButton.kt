@@ -21,9 +21,10 @@ class LoadingButton @JvmOverloads constructor(
     private var buttonBackgroundColor: Int = getColor(context, R.color.colorPrimaryDark)
     private var progressColor: Int = getColor(context, R.color.colorPrimary)
     private var textColor: Int = Color.WHITE
+    private var errorColor: Int = Color.RED
     private var buttonText: String = context.getString(R.string.state_default)
 
-    var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Default) { p, old, new ->
+    private var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Default) { p, old, new ->
         invalidate()
     }
 
@@ -50,6 +51,7 @@ class LoadingButton @JvmOverloads constructor(
                 progressColor = getColor(R.styleable.LoadingButton_progressColor, Color.BLUE)
                 textColor = getColor(R.styleable.LoadingButton_textColor, Color.WHITE)
                 buttonText = getString(R.styleable.LoadingButton_buttonText) ?: context.getString(R.string.state_default)
+                errorColor = getColor(R.styleable.LoadingButton_errorColor, Color.RED)
             } finally {
                 recycle()
             }
@@ -73,6 +75,11 @@ class LoadingButton @JvmOverloads constructor(
             canvas?.drawRect(0f, 0f, progress * widthSize, heightSize.toFloat(), paintProgress)
         }
 
+        if (buttonState == ButtonState.Failed) {
+            paintBackground.color = errorColor  // Apply the error color to the background
+            invalidate()  // Redraw the view with the new color
+        }
+
         // Draw text
         val text = when (buttonState) {
             ButtonState.Default -> context.getString(R.string.state_default)
@@ -93,6 +100,8 @@ class LoadingButton @JvmOverloads constructor(
     fun setLoadingState(state: ButtonState) {
         when (state) {
             ButtonState.Loading -> {
+                // Disable button to prevent spamming clicks
+                isClickable = false
                 buttonState = state
                 valueAnimator.start()
             }
@@ -114,16 +123,19 @@ class LoadingButton @JvmOverloads constructor(
                         context.getString(R.string.notification_description),
                         true
                     )
+                    isClickable = true
                 } else {
                     // Delay setting to Completed until animation finishes
                     valueAnimator.addListener(object : Animator.AnimatorListener {
                         override fun onAnimationEnd(animation: Animator) {
                             buttonState = ButtonState.Completed
+                            // Trigger notification when animation finishes
                             (context as MainActivity).sendNotification(
                                 context.getString(R.string.notification_title),
                                 context.getString(R.string.notification_description),
                                 true
                             )
+                            isClickable = true
                             valueAnimator.removeListener(this) // Clean up listener
                         }
 
