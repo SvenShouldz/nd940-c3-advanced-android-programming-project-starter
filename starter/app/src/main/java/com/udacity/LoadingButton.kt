@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat.getColor
@@ -17,12 +18,15 @@ class LoadingButton @JvmOverloads constructor(
     private var widthSize = 0
     private var heightSize = 0
     private var progress = 0f
+    private var circleAngle = 0f
 
     private var buttonBackgroundColor: Int = getColor(context, R.color.colorPrimaryDark)
     private var progressColor: Int = getColor(context, R.color.colorPrimary)
     private var textColor: Int = Color.WHITE
     private var errorColor: Int = Color.RED
+    private var circleColor: Int = Color.WHITE
     private var buttonText: String = context.getString(R.string.state_default)
+    private val circleRectF = RectF()
 
     private var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Default) { p, old, new ->
         invalidate()
@@ -30,6 +34,7 @@ class LoadingButton @JvmOverloads constructor(
 
     private val paintBackground = Paint(Paint.ANTI_ALIAS_FLAG)
     private val paintProgress = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paintCircle = Paint(Paint.ANTI_ALIAS_FLAG)
     private val paintText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         textSize = 48f
@@ -49,10 +54,13 @@ class LoadingButton @JvmOverloads constructor(
         // Get custom attributes
         context.theme.obtainStyledAttributes(attrs, R.styleable.LoadingButton, 0, 0).apply {
             try {
-                buttonBackgroundColor = getColor(R.styleable.LoadingButton_buttonBackgroundColor, Color.GRAY)
+                buttonBackgroundColor =
+                    getColor(R.styleable.LoadingButton_buttonBackgroundColor, Color.GRAY)
                 progressColor = getColor(R.styleable.LoadingButton_progressColor, Color.BLUE)
                 textColor = getColor(R.styleable.LoadingButton_textColor, Color.WHITE)
-                buttonText = getString(R.styleable.LoadingButton_buttonText) ?: context.getString(R.string.state_default)
+                circleColor = getColor(R.styleable.LoadingButton_circleColor, Color.WHITE)
+                buttonText = getString(R.styleable.LoadingButton_buttonText)
+                    ?: context.getString(R.string.state_default)
                 errorColor = getColor(R.styleable.LoadingButton_errorColor, Color.RED)
             } finally {
                 recycle()
@@ -61,6 +69,7 @@ class LoadingButton @JvmOverloads constructor(
 
         paintBackground.color = buttonBackgroundColor
         paintProgress.color = progressColor
+        paintCircle.color = circleColor
         paintText.color = textColor
 
         isClickable = true
@@ -75,18 +84,28 @@ class LoadingButton @JvmOverloads constructor(
         // Draw the loading animation progress
         if (buttonState == ButtonState.Loading) {
             canvas?.drawRect(0f, 0f, progress * widthSize, heightSize.toFloat(), paintProgress)
-        }
 
+            val circleRadius = heightSize.toFloat() / 4
+            val centerX = widthSize.toFloat() / 4
+            val centerY = heightSize.toFloat() / 2
+
+            circleRectF.set(
+                (centerX * 3.5 - circleRadius).toFloat(),
+                centerY - circleRadius,
+                (centerX * 3.5 + circleRadius).toFloat(),
+                centerY + circleRadius
+            )
+            // Draw the circle
+            canvas?.drawArc(circleRectF, -90f, circleAngle, true, paintCircle)
+        }
         if (buttonState == ButtonState.Failed) {
             paintBackground.color = errorColor  // Apply the error color to the background
             invalidate()  // Redraw the view with the new color
         }
-
         if (buttonState == ButtonState.Completed) {
             paintBackground.color = buttonBackgroundColor
             invalidate()
         }
-
         // Draw text
         val text = when (buttonState) {
             ButtonState.Default -> context.getString(R.string.state_default)
@@ -95,7 +114,6 @@ class LoadingButton @JvmOverloads constructor(
             ButtonState.Failed -> context.getString(R.string.state_failed)
             ButtonState.Completed -> context.getString(R.string.state_completed)
         }
-
         canvas?.drawText(
             text,
             (widthSize / 2).toFloat(),
@@ -117,6 +135,7 @@ class LoadingButton @JvmOverloads constructor(
                     isClickable = false // Disable button to prevent spamming clicks
                     buttonState = state
                     valueAnimator.start()
+                    startCircleAnimation()
                 }
             }
             ButtonState.Pending -> {
@@ -167,6 +186,16 @@ class LoadingButton @JvmOverloads constructor(
                 invalidate()
             }
         }
+    }
+
+    private fun startCircleAnimation() {
+        val animator = ValueAnimator.ofFloat(0f, 360f)
+        animator.duration = 2000
+        animator.addUpdateListener { animation ->
+            circleAngle = animation.animatedValue as Float
+            invalidate()
+        }
+        animator.start()
     }
 
     private fun isAnimationCompleted(): Boolean {
