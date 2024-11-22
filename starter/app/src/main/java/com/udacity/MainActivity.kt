@@ -1,12 +1,14 @@
 package com.udacity
 
 import android.Manifest.permission.POST_NOTIFICATIONS
+import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.database.Cursor
 import android.graphics.drawable.Animatable2
@@ -21,9 +23,11 @@ import android.os.Looper
 import android.util.Log
 import android.widget.RadioButton
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.udacity.databinding.ActivityMainBinding
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +49,8 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var pendingStartTime: Long = 0
     private val TIMEOUT_THRESHOLD: Long = 10000
+    private val CHANNEL_ID = "notification_downloads"
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +60,15 @@ class MainActivity : AppCompatActivity() {
         setupNotifications()
         setupClickListener()
         setupInitialDrawable()
+        checkStoragePermission()
     }
+
+    private fun checkStoragePermission() {
+        if (ContextCompat.checkSelfPermission(this, WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(WRITE_EXTERNAL_STORAGE), 0)
+        }
+    }
+
 
     private fun setDrawable(drawableResId: Int): AnimatedVectorDrawable? {
         return try {
@@ -94,8 +108,9 @@ class MainActivity : AppCompatActivity() {
         drawable.start()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setupNotifications() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
             // Request permission for Notifications
             ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 1)
             // Notifications Channel
@@ -109,7 +124,7 @@ class MainActivity : AppCompatActivity() {
 
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
-        }
+
     }
 
     private fun setupClickListener() {
@@ -160,7 +175,15 @@ class MainActivity : AppCompatActivity() {
             .addAction(action)
 
         // Show the notification
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = NotificationManagerCompat.from(this)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 1)
+            return
+        }
         notificationManager.notify(1, builder.build())
     }
 
@@ -277,10 +300,5 @@ class MainActivity : AppCompatActivity() {
             Log.e("URLCheck", "Error validating URL", e)
             false
         }
-    }
-
-
-    companion object {
-        private const val CHANNEL_ID = "notification_downloads"
     }
 }
